@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# A version manager for kubectl
+#
+#This bash script will download various versions of kubectl to the user's KVM_HOME directory (~/.kvm)
+#
+KVM_HOME=~/.kvm
+
+function show_usage () {
+	echo "Usage kvm <Version of kubectl to install>"
+	echo ""
+	echo "See https://github.com/kubernetes/kubernetes/releases for a list of available releases."
+	echo ""
+	echo "The version must be formatted as Major.Minor.Patch"
+	echo ""
+	echo "	Example : kvm 1.19.2"
+	echo "	Example : kvm 1.16.14"
+	exit
+}
+
+if ! [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+then
+	show_usage
+fi
+
+if [ ! -d $KVM_HOME ] 
+then
+	mkdir $KVM_HOME
+fi
+KUBECTL_FILE="$KVM_HOME/v$1/kubectl"
+if [ ! -d "$KVM_HOME/v$1" ] 
+then
+	echo "Downloading kubectl V$1"
+	mkdir "$KVM_HOME/v$1"
+	curl -Lo $KUBECTL_FILE https://storage.googleapis.com/kubernetes-release/release/v$1/bin/darwin/amd64/kubectl
+	chmod 755 $KUBECTL_FILE
+fi
+echo "Setting /usr/local/bin/kubectl to V$1"
+if [ -L /usr/local/bin/kubectl ]
+then
+	rm /usr/local/bin/kubectl
+fi
+ln -s $KUBECTL_FILE /usr/local/bin/kubectl
