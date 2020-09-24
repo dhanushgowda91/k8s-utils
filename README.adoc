@@ -1,0 +1,56 @@
+:sectlinks:
+:sectanchors:
+:stylesheet: asciidoctor.css
+:imagesdir: ./images
+// If not rendered on github, we use fonts for the captions, otherwise, we assign github emojis. DO NOT PUT A BLANK LINE BEFORE THIS, the ICONS don't render.
+ifndef::env-github[]
+:icons: font
+endif::[]
+ifdef::env-github[]
+:important-caption: :exclamation:
+:warning-caption: :x:
+:caution-caption: :hand:
+:note-caption: :bulb:
+:tip-caption: :mag:
+endif::[]
+
+= Kubernetes Utilities and Notes
+
+This repo is a place where I document my experience as I am learning Kubernetes.
+
+== Local Setup
+
+I am using a Mac so these notes are specific to a mac, although it should be pretty easy to adapt these for windows or linux.
+
+=== Local Kubernetes Cluster Setup
+
+The "Docker Desktop on Mac" includes a a single node Kubernetes cluster that can be used for local experimentation. I believe this might be similar to setting up minikube for local development.
+
+=== kubectl
+
+The `kubectl` (Kube Control) is a client application for controlling a Kubernetes cluster manager.
+
+NOTE: The documentation states that you should use a version of `kubectl` that is within one minor version of the cluster you are attempting to manage. This requirement often means you need multiple versions of `kubectl`.
+
+There is a 'kvm' bash script in this repository that can be used to download/switch between different versions of `kubectl`. The script is Mac-specific but can be easily adapted for Linux or Windows.
+
+To use the kubectrl version manager:
+
+1. Clone this repo or just copy the file "kvm"
+1. Change permissions on `kvm` to add execute privileges. `chmod 755 kvm`
+1. From the root folder of the repo: `ln -s $(pwd)/kvm /usr/local/bin/kvm`
+1. Assuming `/usr/local/bin` is on your execution path, you can now type `kvm help` to get usage information.
+
+image:kvm-usage.png[]
+
+WARNING: The utility requires the version to be formatted as "<Major>.<Minor>.<Patch>" and does not validate if the version exists. A list of versions can be found here: https://github.com/kubernetes/kubernetes/releases[GitHub release page for Kubenertes].
+
+=== Kube PS1
+
+This is a small utility that will display the current Kubernetes context and namespace (used by `kubectl`) as part of your command prompt. See the following https://github.com/jonmosco/kube-ps1[project for instalation instructions].
+
+NOTE: Once instaled you can use `kubeon` / `kubeoff` to toggle the display.
+
+=== Kubectx
+
+This project allows you to change either your kubernetes context via `kubectx` and to change your namespace via 'kubens'. See the following https://github.com/ahmetb/kubectx[project for instalation instructions].
