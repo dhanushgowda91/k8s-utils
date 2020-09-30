@@ -26,15 +26,15 @@ I am using a Mac so these notes are specific to a mac, although it should be pre
 
 The "Docker Desktop on Mac" includes a a single node Kubernetes cluster that can be used for local experimentation. I believe this might be similar to setting up minikube for local development.
 
-=== kubectl
+=== kvm
 
 The `kubectl` (Kube Control) is a client application for controlling a Kubernetes cluster manager.
 
 NOTE: The documentation states that you should use a version of `kubectl` that is within one minor version of the cluster you are attempting to manage. This requirement often means you need multiple versions of `kubectl`.
 
-There is a 'kvm' bash script in this repository that can be used to download/switch between different versions of `kubectl`. The script is Mac-specific but can be easily adapted for Linux or Windows.
+The 'kvm' bash script in this repository that can be used to download/switch between different versions of `kubectl`. The script is Mac-specific but can be easily adapted for Linux or Windows.
 
-To use the kubectrl version manager:
+To use the kubectl version manager:
 
 1. Clone this repo or just copy the file "kvm"
 1. Change permissions on `kvm` to add execute privileges. `chmod 755 kvm`
@@ -54,3 +54,193 @@ NOTE: Once instaled you can use `kubeon` / `kubeoff` to toggle the display.
 === Kubectx
 
 This project allows you to change either your kubernetes context via `kubectx` and to change your namespace via 'kubens'. See the following https://github.com/ahmetb/kubectx[project for instalation instructions].
+
+== kubectl
+
+You use 'kubectl' to interact with a Kubernetes cluster.
+
+NOTE: You can use `source <(kubectl completion zsh)` to add command completion for `kubectl`
+
+== Misc. Notes
+
+=== Docker Container DNS Setup
+
+If your container needs to resolve external services and host names in your private data center you will have to adjust the
+docker daemon so that it includes the local DNS server.
+
+This is done by adding dns properties to the daemon.json file: 
+
+Similar to the following: 
+
+```
+{
+	"dns": ["<dns IP address>", "8.8.8.8"],
+	"dns-search": ["<local domain>"]
+}
+```
+
+NOTE: The dns-search attribute is used to default the search domain on unqualified hosts.
+
+=== Kubernetes DNS Setup
+
+A kubernetes cluster that is hosted in the data center will likely have a requirement to resolve host names that are local to that environment.
+This requires a changes to the CoreDNS module that is used by kubernetes for host resolution.
+
+==== Adding DNS Utilities To Your Cluster
+
+You can triage DNS resolution within your cluster by adding the `dnsutils` pod.
+
+.dnsutils.yaml
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dnsutils
+  namespace: default
+spec:
+  containers:
+  - name: dnsutils
+    image: gcr.io/kubernetes-e2e-test-images/dnsutils:1.3
+    command:
+      - sleep
+      - "3600"
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Always
+----
+
+----
+kubectl apply -f dnsutils.yaml # <1>
+kubectl exec -i -t dnsutils -- sh # <2>
+----
+<1> Apply the deployment to add the dnsutils pod.
+<2> Execute an interactive shell within the dnsutils pod. Once in the shell, you can use `nslookup` and `ping` to test if resolution is working.
+
+==== Creating A Host Alias
+
+There are cases where a single host needs to be alaised as it's fully qualtified hostname. This can be accomplished for an individual host by using a rewrite rule.
+
+To do this, edit the ConfigMap for the CoreDNS plugin:
+
+In this example, we want to map `config` (an alias for our externalized configuration server) to its fully qualified path of `config.build.internal`.
+We can do this by editing the ConfigMap for coredns:
+
+1. `kubectl edit --namespace=kube-system configmap coredns`
+2. Add `rewrite name config config.build.internal` to the ConfigMap:
+
+image:host-rewrite.png[]
+
+==== Adding A Private DNS Server
+
+An image that connects to services outside the kubernetes cluster but hosted within an internal data center requires that the cluster can correctly resolve those host names.
+This typicaly involves adding a private DNS server that will be used for name resolution.
+
+Additional DNS queries can be forwarded to a private DNS server by adding a `coredns-custom` ConfigMap.
+
+.dns-config.yaml
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  build.server: | # <1>
+    build.internal { # <2>
+      forward . 10.143.15.140 # <3>
+    }
+----
+<1> All custom server files must have a “.server” file extension.
+<2> Any host name with the `build.internal` suffix will have the forwarding rule applied.
+<3> The IP Address of the DNS server to forward the request.
+
+The changes to the DNS Server can be applied using the following two commands: 
+
+----
+kubectl apply -f dns-config.yaml # <1>
+kubectl delete pod --namespace kube-system -l k8s-app=kube-dns # <2>
+----
+<1> Apply the ConfigMap to the cluster.
+<2> Restart the DNS module by deleting the pods. (Kubernetes will then recreate them)
+
+=== Tagging and pushing an image to a private repository
+
+In my local kubernetes environment, I wanted to use a private repository to host my images. This can be easily accomplished
+by using the `docker-compose.yml` file located in this repository. This just starts up a container register (with no security) on port 5000.
+You can also find alternatives out there that will host the registery in Kubernetes itself. In an organization, you will likely have something
+like artifactory as your private image registry and a local registry is only necessary when creating a completely localized kubernetes environment.
+
+Assuming the registry is running and the maven coordinates of your spring boot application are `com.build:product-api:1.0.222-SNAPSOT`
+
+
+1. `mvn spring-boot:build-image` This uses cloud native build packs to build the oci compliant image.
+2. `docker tag product-api:1.0.122-SNAPSHOT localhost:5000/buildcom/product-api` To tag the image.
+3. `docker push localhost:5000/buildcom/product-api` To push the image to the registry.
+
+=== Deploying an image to Kubernetes
+
+To deploy a single image to Kubernetes, a `deployment.yaml` file can be generated using kubectrl. The following will create the deployment using the
+newly created image and define a service that exposes the image publicly from the cluster.
+
+.1. Create deployment.yaml file using the image:
+----
+kubectl create deployment product-api --image=localhost:5000/buildcom/product-api --dry-run=client -o=yaml > deployment.yaml
+----
+
+.2. Add the Service to the existing deployment.yaml file:
+----
+echo --- >> deployment.yaml
+kubectl create service clusterip product-api --tcp=8080:8080 --dry-run=client -o=yaml >> deployment.yaml
+----
+
+.The deployment.yaml file:
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: product-api
+  name: product-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-api
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: product-api
+    spec:
+      containers:
+      - image: localhost:5000/buildcom/product-api
+        name: product-api
+        resources: {}
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: product-api
+  name: product-api
+spec:
+  ports:
+  - name: 8080-8080
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: product-api
+  type: ClusterIP
+status:
+  loadBalancer: {}
+----
+
+.3. Apply the deployment to the cluster: 
+----
+kubectl apply -f deployment.yaml
+----
