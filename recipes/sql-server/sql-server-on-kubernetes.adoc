@@ -1,0 +1,124 @@
+:sectlinks:
+:sectanchors:
+:stylesheet: asciidoctor.css
+:imagesdir: ./images
+// If not rendered on github, we use fonts for the captions, otherwise, we assign github emojis. DO NOT PUT A BLANK LINE BEFORE THIS, the ICONS don't render.
+ifndef::env-github[]
+:icons: font
+endif::[]
+ifdef::env-github[]
+:important-caption: :exclamation:
+:warning-caption: :x:
+:caution-caption: :hand:
+:note-caption: :bulb:
+:tip-caption: :mag:
+endif::[]
+
+= Setting up MSSQL Server on Kubernetes
+
+These are my notes on deploying a simple (non-production ready instance) of MS SQL Server into Kubernetes. These steps will walk through how to
+create the MS SQL Server pod and then use a service to expose that service. In my specific use-case, I wanted to setup MS SQL Server so I could
+deploy Spring Cloud Data Flow into my cluster. The instructions in this recipe are specific to this use-case but can be easily adapted for other
+use-cases.
+
+== MS SQL Server Pod & Service Definition
+
+The deployment yaml for this tutorial is located in the same folder as this document and is called `mssql-deployment.yaml`. 
+
+=== MS SQL Server Pod
+
+The pod is the container that hosts the MS SQL server instance. The pod uses the official container provided from Microsoft and is NOT
+setup with persistent storage.
+
+.MS SQL Server Pod Defintion
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mssql # <1>
+  name: mssql
+spec:
+  containers:
+  - image: mcr.microsoft.com/mssql/server # <2>
+    name: mssql
+    #Environment Variables
+    env:
+    - name: ACCEPT_EULA
+      value: "Y"
+    - name: SA_PASSWORD
+      value: "Your_password123" # <3>
+    - name: MSSQL_PID
+      value: Developer # <4>
+    #Map the standard mssql server Port.
+    ports:
+    - name: mssql-port
+      containerPort: 1433 # <5>
+----
+<1> The label being applied to our pod is `app=msslq` and this will be used in the selector of the service.
+<2> The image of MS SQL Server that will be downloaded and then deployed into Kubernetes.
+<3> The password rules for MS SQL Server require the password to be 8 characters, include upper/lowercase letters and a number or symbol.
+<4> The MSSQL PID is "Developer" which I *think* is like a license?
+<5> The container port for MSSQL server.
+
+WARNING: The container will not start if the password used in the deployment descriptor violates the MS SQL Server password rules.
+The password must be at least 8 characters in lenth, include upper/lowercase letters, and include either a number or symbol. I initial
+used a password suffiexd with exclaimation point `!` and it was not working as expected. This might have to do with YAML Parser, just be aware.
+
+
+=== Exposing MS SQL Server via a Service
+
+The service is used to define an end point that allows an external client (like Azure Data Studio) to connect to the database. Additionally,
+the service also provides an internal Cluster IP that allows containers within Kubernetes to connect to the pod.
+
+.MS SQL Server Service Defintion
+[source,yaml]
+----
+#Service Setup:
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-server <1>
+spec:
+  # NodePort exposea s port on the kubernetes node to the outside world
+  # and creates an internal cluster IP for the services as well.
+  type: NodePort <2>
+  #Map the internal pod port to port 31433 on the cluster.
+  ports:
+  - name: 31433-1433
+    nodePort: 31433
+    port: 1433
+  # Selector uses label app=mssql
+  selector:
+    app: mssql <3>
+----
+<1> The name of the service, also becomes the dns name that can be used internally to access ms sql server.
+<2> The service type is defined as a NodePort so we can expose a port on the Kubernetes node so external clients can connect to the database.
+This also implicitly creates a cluser IP.
+<3> The selector "app=mssql" is used to map this service to the underlying pod.
+
+
+=== Apply the deployment on the cluster
+
+The pod and the service can be created on the cluster by using the command: 
+
+`kubectl apply -f mssql-deployment.yaml`
+
+image:deploy-mssql.png[]
+
+The logs within the MS SQL Server pod can be viewed using:
+
+`kubectl logs mssql`
+
+== Preparing MS SQL Server For Use
+
+The spring cloud data flow infrastructure uses a relational database to store information about executed instances and job information.
+This section outlines how to create a database within SQL Server and then creating a database user that has acceess to that database.
+
+=== Connecting to the database with Azure Data Studio
+
+The kubernetes service has been setup to expose the database the port 31433 on the Kubernetes node. This allows external clients to connect
+and use the database.
+
+

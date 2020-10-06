@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: mssql
+  name: mssql
+spec:
+  containers:
+  - image: mcr.microsoft.com/mssql/server
+    name: mssql
+    #Environment Variables
+    env:
+    - name: ACCEPT_EULA
+      value: "Y"
+    - name: SA_PASSWORD
+      value: "Your_password123"
+    - name: MSSQL_PID
+      value: Developer
+    #Map the standard mssql server Port.
+    ports:
+    - name: mssql-port
+      containerPort: 1433
+
+---
+
+#Service Setup:
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-server
+spec:
+  # NodePort exposea s port on the kubernetes node to the outside world
+  # and creates an internal cluster IP for the services as well.
+  type: NodePort
+  #Map the internal pod port to port 31433 on the cluster.
+  ports:
+  - name: 31433-1433
+    nodePort: 31433
+    port: 1433
+  # Selector uses label app=mssql
+  selector:
+    app: mssql

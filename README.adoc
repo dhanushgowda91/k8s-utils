@@ -186,61 +186,25 @@ newly created image and define a service that exposes the image publicly from th
 kubectl create deployment product-api --image=localhost:5000/buildcom/product-api --dry-run=client -o=yaml > deployment.yaml
 ----
 
-.2. Add the Service to the existing deployment.yaml file:
+.2. Create service.yaml file:
 ----
-echo --- >> deployment.yaml
-kubectl create service clusterip product-api --tcp=8080:8080 --dry-run=client -o=yaml >> deployment.yaml
-----
-
-.The deployment.yaml file:
-[source,yaml]
-----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  creationTimestamp: null
-  labels:
-    app: product-api
-  name: product-api
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: product-api
-  strategy: {}
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: product-api
-    spec:
-      containers:
-      - image: localhost:5000/buildcom/product-api
-        name: product-api
-        resources: {}
-status: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  creationTimestamp: null
-  labels:
-    app: product-api
-  name: product-api
-spec:
-  ports:
-  - name: 8080-8080
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app: product-api
-  type: ClusterIP
-status:
-  loadBalancer: {}
+kubectl create service clusterip product-api --tcp=8080:8080 --dry-run=client -o=yaml >> service.yaml
 ----
 
-.3. Apply the deployment to the cluster: 
+.3. Apply the deployment and service to the cluster: 
 ----
 kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
 ----
+
+## Helm Setup
+
+Helm is an orchestration tool that allows you to easily group a set of kubernetes resources into one unit and the deploy, update, and rollback those resources in a reproducible manner.
+
+
+### Instaling The Helm Client
+
+`curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash`
+
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
