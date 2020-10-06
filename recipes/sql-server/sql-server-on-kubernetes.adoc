@@ -119,6 +119,40 @@ This section outlines how to create a database within SQL Server and then creati
 === Connecting to the database with Azure Data Studio
 
 The kubernetes service has been setup to expose the database the port 31433 on the Kubernetes node. This allows external clients to connect
-and use the database.
+and use the database. In my case, I am using the kubernetes cluster that is included with docker desktop and I can use `localhost` as my server.
+The port, `31433` can be configured usig the "Advanced..." button. Initially, we will connect using the user `sa` and the password used in the pod definition.
 
+image:login.png[]
+
+=== Create a database and user
+
+We need to create a database and user within SQL Server that can be used to host the schema for dataflow and skipper. This can be done by logging
+into the database as the `sa` user and executing the following: 
+
+.Database Creation
+----
+create database dataflow
+
+EXEC sp_configure 'CONTAINED DATABASE AUTHENTICATION', 1;
+RECONFIGURE;
+USE [master];
+ALTER DATABASE [dataflow] SET CONTAINMENT = PARTIAL;
+----
+
+.Schema Creation
+----
+-- This must be executed by itself.
+use [dataflow];
+create schema task;
+----
+
+.User Creation
+----
+use [dataflow];
+create schema task;
+
+create login dataflow with password = 'Coolpass1!'
+create user dataflow for login dataflow with default_schema=task;
+grant control on schema :: task to dataflow;
+----
 
