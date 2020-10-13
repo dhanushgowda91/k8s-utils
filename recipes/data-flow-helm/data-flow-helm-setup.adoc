@@ -1,0 +1,64 @@
+:sectlinks:
+:sectanchors:
+:stylesheet: asciidoctor.css
+:imagesdir: ./images
+// If not rendered on github, we use fonts for the captions, otherwise, we assign github emojis. DO NOT PUT A BLANK LINE BEFORE THIS, the ICONS don't render.
+ifndef::env-github[]
+:icons: font
+endif::[]
+ifdef::env-github[]
+:important-caption: :exclamation:
+:warning-caption: :x:
+:caution-caption: :hand:
+:note-caption: :bulb:
+:tip-caption: :mag:
+endif::[]
+
+= Spring Cloud Data Flow Kubernetes Setup
+
+These are my notes on using the provided helm chart for Spring Cloud Data Flow to install a working instance within Kubernetes. The chart
+provides a large number of configuration options and we are going to make changes such that the data flow server uses MS SQL Server rather
+than Mariadb. 
+
+== Add SCDF Chart repository to the Helm Client
+
+These notes assume you have helm correctly installed on your machine and you have configured kubectl to point to the correct Kubernetes context.
+The chart for SCDF has recently moved to bitnami and the first step is to add bitnami's repository to helm:
+
+`helm repo add bitnami https://charts.bitnami.com/bitnami`
+
+NOTE: The steps taken here losely follow the https://dataflow.spring.io/docs/installation/kubernetes/helm/[installation documentation on Spring's official web site]. The documentation (at the time of this writing) does not match exactly with the chart that is hosted on Bitnami.
+
+
+== Structure of the SCDF Helm Chart
+
+The helm chart can be viewed via github at https://github.com/bitnami/charts/tree/master/bitnami/spring-cloud-dataflow[https://github.com/bitnami/charts/tree/master/bitnami/spring-cloud-dataflow]
+and the `README.md` contains documentation for the various customizations that can be made to the helm chart.
+
+
+Ultimately, the chart will be installed with the following command (All customizations will be defined in the settings file) : 
+
+`helm install --name my-release -f ./scdf-settings.yaml bitnami/spring-cloud-dataflow`
+
+== Customizing the SCDF Helm Chart
+
+Installing the chart into a kubernetes cluster on a developer's machine requires exposing a NodePort to allow an external web client to access the data flow server.
+The chart provides the ability to do this by specifying the following in the settings file. If you are using the Kubernetes cluster that is packages with docker
+desktop, after the chart is installed, the data flow server can be accessed via `http://localhost:30100/dashboard`:
+
+scdf-settings.yml
+```
+server:
+  service:
+    # We want to expose the data flow server on an external node port, so we can access it from a browser.
+    type: NodePort
+    nodePort: 30100
+```
+
+== Using a custom database with data flow.
+
+The helm chart is pre-configured to install a mariadb inside the kubernetes cluster that will be used to persisten job/task information. This makes it easy to setup the data flow server for experimentation but you will likely want to connect the server to a managed/external database.
+
+In this example, we will configure the chart to connect to an MS SQL Server database. These instructions assume the DNS for the database server can be resolved from within the Kubernetes cluster.
+
+NOTE: If you are using a database server that is hosted within a private data center, link:../../README{outfilesuffix}[please see the sections on extending CoreDNS].

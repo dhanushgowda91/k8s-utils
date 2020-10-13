@@ -204,7 +204,9 @@ Helm is an orchestration tool that allows you to easily group a set of kubernete
 
 ### Instaling The Helm Client
 
+The recipe for installing spring cloud data flow requires the use of the Helm orchestraion utility. This can be installed on a client machine
+via the following command: 
+
 `curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash`
 
 
-helm repo add bitnami https://charts.bitnami.com/bitnami
