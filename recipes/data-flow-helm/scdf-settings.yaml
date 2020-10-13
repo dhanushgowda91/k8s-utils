@@ -1,0 +1,61 @@
+server:
+  service:
+    # We want to expose the data flow server on an external node port, so we can access it from a browser.
+    type: NodePort
+    nodePort: 30100
+  configuration:
+    streamingEnabled: false
+    batchEnabled: true
+  # We can set environment variables directly from this help chart.
+  extraEnvVars:
+  - name: "SPRING_CLOUD_CONFIG_ENABLED"
+    value: "true"
+  - name: "SPRING_CLOUD_CONFIG_NAME"
+    value: "data-flow-v2"
+  - name: "SPRING_CLOUD_CONFIG_URI"
+    value: "http://config"
+  - name: "SPRING_CLOUD_CONFIG_LABEL"
+    value: "SODEV-28877"
+  - name: "SPRING_CLOUD_CONFIG_USERNAME"
+    value: "config"
+  - name: "SPRING_CLOUD_CONFIG_PASSWORD"
+    value: "Cheve1le!"
+  # Or we can set environment variables via a ConfigMap/Secret
+  # extraEnvVarsCM:
+  # extraEnvVarsSecret:
+
+# Configure data flow to use the MS SQL Server datbase that has been deployed into kubernetes and exposed as the service "mssql-server"
+# externalDatabase:
+#   # host: mssql-server
+#   # port: 1433
+#   # scheme: "sqlserver"
+#   driver: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+#   password: "Coolpass1!"
+#   dataflow:
+#     url : "jdbc:sqlserver://mssql-server"
+#     user: dataflow
+#   skipper:
+#     url : "jdbc:sqlserver://mssql-server"
+#     user: dataflow
+#   hibernateDialect: "org.hibernate.dialect.SQLServer2012Dialect"
+
+# Disabling MariaDB
+mariadb:
+  enabled: false
+
+# Disabling metrics for the moment.
+metrics:
+  enabled: false
+
+# We are not using streaming, we can disable skipper and rabbit.
+skipper:
+  enabled: false
+  # We can configure environment variables in a similar manner for skiper.
+  # extraEnvVars: []
+  # Or we can set environment variables via a ConfigMap/Secret
+  # extraEnvVarsCM:
+  # extraEnvVarsSecret:
+
+# Disabling Rabbit because we are not using streaming yet.
+rabbitmq:
+  enabled: false

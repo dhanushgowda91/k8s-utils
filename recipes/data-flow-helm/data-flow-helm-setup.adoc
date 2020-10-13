@@ -61,4 +61,4 @@ The helm chart is pre-configured to install a mariadb inside the kubernetes clus
 
 In this example, we will configure the chart to connect to an MS SQL Server database. These instructions assume the DNS for the database server can be resolved from within the Kubernetes cluster.
 
-NOTE: If you are using a database server that is hosted within a private data center, link:../../README#kubernetes-dns-setup{outfilesuffix}[please see the sections on extending CoreDNS].
+NOTE: If you are using a database server that is hosted within a private data center, link:../../README{outfilesuffix}#kubernetes-dns-setup[please see the sections on extending CoreDNS].
