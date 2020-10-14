@@ -114,7 +114,7 @@ server:
   - name: "SPRING_CLOUD_CONFIG_USERNAME"
     value: "config"
   - name: "SPRING_CLOUD_CONFIG_PASSWORD"
-    value: "Cheve1le!"
+    value: "<PASSWORD>"
 # Disabling MariaDB
 mariadb:
   enabled: false <5>
