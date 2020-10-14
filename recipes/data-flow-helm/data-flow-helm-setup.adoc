@@ -67,7 +67,7 @@ NOTE: If you want to experiment with MS SQL Server, you can follow the link:../s
 
 There are many wants to inject database configuration into the data flow server, this document will outline two methods that I have tried.
 
-=== Using the "externalDatabase" properties to connect to the database.
+=== Using the "externalDatabase" properties to configure JDBC connection
 
 The official Helm chart for Spring Cloud Data Flow provides the ability to customize the database connectivity via pre-defined properties. If the sql server DNS name is `mssql-server`, the following can be added to the `scdf-settings.yml` file:
 
@@ -92,7 +92,7 @@ mariadb:
 <2> The data flow server uses Hibernate and we need to specific the correct SQL dialect.
 <3> Finally, you must tell the chart to NOT provision the MariaDB pod as part of the deployment.
 
-=== Using an external Spring Cloud Config server to provide configuration.
+=== Using an external Spring Cloud Config Server to configure JDBC connection
 
 The Spring Cloud Config server is a great way to serve configuration information into any Spring Boot enabled application. This means that SCDF can be configured to pick-up its configuration information from a config server. To set this up, several envrionment variables need to be configured in the `scdf-settings.yml` file. These environment variables are mounted into the Spring Environment of the data flow server.
 
@@ -120,7 +120,7 @@ mariadb:
 <2> The application name used by the data flow server when retrieving information from the config server.
 <3> The URL used to connect to the config server. This must be a dns host that is resolvable within the Kubenetes cluster.
 <4> If the configuration settings are NOT on the main branch, a branch label can be specified.
-<5> The MariaDB must be disabled to ensure it is not provisioned as part of the Helm chart.
+<5> MariaDB must be disabled to ensure it is not provisioned as part of the Helm chart.
 
 Once the chart environemnt has been setup to connect to the configuration server, the configuration can be setup like any other application:
 
