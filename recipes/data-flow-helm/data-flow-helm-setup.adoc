@@ -38,7 +38,7 @@ and the `README.md` contains documentation for the various customizations that c
 
 Ultimately, the chart will be installed with the following command (All customizations will be defined in the settings file) : 
 
-`helm install --name my-release -f ./scdf-settings.yaml bitnami/spring-cloud-dataflow`
+`helm install scdf -f ./scdf-settings.yaml bitnami/spring-cloud-dataflow`
 
 == Customizing the SCDF Helm Chart
 
