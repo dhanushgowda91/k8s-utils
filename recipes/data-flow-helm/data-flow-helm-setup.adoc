@@ -112,14 +112,15 @@ server:
     value: "config"
   - name: "SPRING_CLOUD_CONFIG_PASSWORD"
     value: "Cheve1le!"
-  # Or we can set environment variables via a ConfigMap/Secret
-  # extraEnvVarsCM:
-  # extraEnvVarsSecret:
+# Disabling MariaDB
+mariadb:
+  enabled: false <5>
 ```
 <1> The data flow server must have the spring-cloud-client explicitly enabled to use the config server.
 <2> The application name used by the data flow server when retrieving information from the config server.
 <3> The URL used to connect to the config server. This must be a dns host that is resolvable within the Kubenetes cluster.
 <4> If the configuration settings are NOT on the main branch, a branch label can be specified.
+<5> The MariaDB must be disabled to ensure it is not provisioned as part of the Helm chart.
 
 Once the chart environemnt has been setup to connect to the configuration server, the configuration can be setup like any other application:
 
