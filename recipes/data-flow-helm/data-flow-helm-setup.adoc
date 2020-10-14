@@ -46,7 +46,7 @@ Installing the chart into a kubernetes cluster on a developer's machine requires
 The chart provides the ability to do this by specifying the following in the settings file. If you are using the Kubernetes cluster that is packages with docker
 desktop, after the chart is installed, the data flow server can be accessed via `http://localhost:30100/dashboard`:
 
-scdf-settings.yml
+.scdf-settings.yml
 ```
 server:
   service:
@@ -54,6 +54,8 @@ server:
     type: NodePort
     nodePort: 30100
 ```
+
+NOTE: For a complete example of the helm customiziations, please reference `scdf-settings.yml` located in the same directory as this document.
 
 == Using a custom database with data flow.
 
@@ -71,7 +73,7 @@ There are many wants to inject database configuration into the data flow server,
 
 The official Helm chart for Spring Cloud Data Flow provides the ability to customize the database connectivity via pre-defined properties. If the sql server DNS name is `mssql-server`, the following can be added to the `scdf-settings.yml` file:
 
-scdf-settings.yml
+.scdf-settings.yml
 ```
 externalDatabase:
   driver: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
@@ -96,6 +98,7 @@ mariadb:
 
 The Spring Cloud Config server is a great way to serve configuration information into any Spring Boot enabled application. This means that SCDF can be configured to pick-up its configuration information from a config server. To set this up, several envrionment variables need to be configured in the `scdf-settings.yml` file. These environment variables are mounted into the Spring Environment of the data flow server.
 
+.scdf-settings.yml
 ```
 server:
   # We can set environment variables directly from this helm chart.
@@ -122,8 +125,11 @@ mariadb:
 <4> If the configuration settings are NOT on the main branch, a branch label can be specified.
 <5> MariaDB must be disabled to ensure it is not provisioned as part of the Helm chart.
 
-Once the chart environemnt has been setup to connect to the configuration server, the configuration can be setup like any other application:
+Once the chart environment has been setup to connect to the configuration server, the configuration can be setup like any other application.
 
+NOTE: The name of the following file (minus the .yml) must match the application name defined in `SPRING_CLOUD_CONFIG_NAME`
+
+.data-flow.yml
 ```
 ---
 
