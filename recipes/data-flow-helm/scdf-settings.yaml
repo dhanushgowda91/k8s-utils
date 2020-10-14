@@ -4,6 +4,7 @@ server:
     type: NodePort
     nodePort: 30100
   configuration:
+	# Disabling streaming for now, since we are only using the task capabilies of data flow at this time.
     streamingEnabled: false
     batchEnabled: true
   # We can set environment variables directly from this help chart.

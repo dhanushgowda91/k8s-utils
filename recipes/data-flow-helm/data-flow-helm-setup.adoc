@@ -57,8 +57,83 @@ server:
 
 == Using a custom database with data flow.
 
-The helm chart is pre-configured to install a mariadb inside the kubernetes cluster that will be used to persisten job/task information. This makes it easy to setup the data flow server for experimentation but you will likely want to connect the server to a managed/external database.
+The helm chart is pre-configured to install a mariadb inside the kubernetes cluster that will be used to persist job/task information. This makes it easy to setup the data flow server for experimentation but you will likely want to connect the server to a managed/external database.
 
 In this example, we will configure the chart to connect to an MS SQL Server database. These instructions assume the DNS for the database server can be resolved from within the Kubernetes cluster.
 
 NOTE: If you are using a database server that is hosted within a private data center, link:../../README{outfilesuffix}#kubernetes-dns-setup[please see the sections on extending CoreDNS].
+
+NOTE: If you want to experiment with MS SQL Server, you can follow the link:../sql-server/sql-server-on-kubernetes{outfilesuffix}[sql-server recipe]. After SQL Server is running within the cluster, pods within the cluster can use the DNS `mssql-server` to connect to the database server.
+
+There are many wants to inject database configuration into the data flow server, this document will outline two methods that I have tried.
+
+=== Using the "externalDatabase" properties to connect to the database.
+
+The official Helm chart for Spring Cloud Data Flow provides the ability to customize the database connectivity via pre-defined properties. If the sql server DNS name is `mssql-server`, the following can be added to the `scdf-settings.yml` file:
+
+scdf-settings.yml
+```
+externalDatabase:
+  driver: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+  password: "Coolpass1!"
+  dataflow:
+    url : "jdbc:sqlserver://mssql-server" # <1>
+    user: dataflow
+  skipper:
+    url : "jdbc:sqlserver://mssql-server" # <1>
+    user: dataflow
+  hibernateDialect: "org.hibernate.dialect.SQLServer2012Dialect" # <2>
+
+# Disabling MariaDB
+mariadb:
+  enabled: false # <3>
+```
+<1> The jdbc url must be specified for both the data flow server and skipper (if you are going to use the streaming capabilities of dataflow)
+<2> The data flow server uses Hibernate and we need to specific the correct SQL dialect.
+<3> Finally, you must tell the chart to NOT provision the MariaDB pod as part of the deployment.
+
+=== Using an external Spring Cloud Config server to provide configuration.
+
+The Spring Cloud Config server is a great way to serve configuration information into any Spring Boot enabled application. This means that SCDF can be configured to pick-up its configuration information from a config server. To set this up, several envrionment variables need to be configured in the `scdf-settings.yml` file. These environment variables are mounted into the Spring Environment of the data flow server.
+
+```
+server:
+  # We can set environment variables directly from this helm chart.
+  extraEnvVars:
+  - name: "SPRING_CLOUD_CONFIG_ENABLED"
+    value: "true" <1>
+  - name: "SPRING_CLOUD_CONFIG_NAME"
+    value: "data-flow" <2>
+  - name: "SPRING_CLOUD_CONFIG_URI"
+    value: "http://config" <3>
+  - name: "SPRING_CLOUD_CONFIG_LABEL"
+    value: "SODEV-28877" <4>
+  - name: "SPRING_CLOUD_CONFIG_USERNAME"
+    value: "config"
+  - name: "SPRING_CLOUD_CONFIG_PASSWORD"
+    value: "Cheve1le!"
+  # Or we can set environment variables via a ConfigMap/Secret
+  # extraEnvVarsCM:
+  # extraEnvVarsSecret:
+```
+<1> The data flow server must have the spring-cloud-client explicitly enabled to use the config server.
+<2> The application name used by the data flow server when retrieving information from the config server.
+<3> The URL used to connect to the config server. This must be a dns host that is resolvable within the Kubenetes cluster.
+<4> If the configuration settings are NOT on the main branch, a branch label can be specified.
+
+Once the chart environemnt has been setup to connect to the configuration server, the configuration can be setup like any other application:
+
+```
+---
+
+spring:
+  datasource:
+    driver: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    url: "jdbc:sqlserver://mssql-server"
+    user: "dataflow"
+    password: "Coolpass1!"
+  jpa:
+    properties:
+      hibernate:
+        dialect: "org.hibernate.dialect.SQLServer2012Dialect"
+```
