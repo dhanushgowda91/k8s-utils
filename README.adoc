@@ -61,6 +61,12 @@ You use 'kubectl' to interact with a Kubernetes cluster.
 
 NOTE: You can use `source <(kubectl completion zsh)` to add command completion for `kubectl`
 
+== k9s
+
+There is an interactive command line tool called `k9s` that automates many of the tasks you would normally need to do with `kubectl`. Once you are familiar with kubectl, you should explore the user of this tool to improve the interactions with your Kubernetes cluster.
+
+The tool https://k9scli.io/[is well documented] and can be installed on a Mac via `brew install derailed/k9s/k9s`
+
 == Misc. Notes
 
 === Docker Container DNS Setup

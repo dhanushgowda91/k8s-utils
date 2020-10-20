@@ -155,6 +155,6 @@ create schema task;
 create login dataflow with password = 'Coolpass1!', DEFAULT_DATABASE=dataflow
 create user dataflow for login dataflow with default_schema=task;
 grant control on schema :: task to dataflow;
--- alter role db_ddladmin add member dataflow;
+alter role db_ddladmin add member dataflow;
 ----
 
