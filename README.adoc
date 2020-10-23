@@ -78,12 +78,13 @@ This is done by adding dns properties to the daemon.json file:
 
 Similar to the following: 
 
-```
+[source,json]
+----
 {
 	"dns": ["<dns IP address>", "8.8.8.8"],
 	"dns-search": ["<local domain>"]
 }
-```
+----
 
 NOTE: The dns-search attribute is used to default the search domain on unqualified hosts.
 
@@ -97,6 +98,7 @@ This requires a changes to the CoreDNS module that is used by kubernetes for hos
 You can triage DNS resolution within your cluster by adding the `dnsutils` pod.
 
 .dnsutils.yaml
+[source,yaml]
 ----
 apiVersion: v1
 kind: Pod
@@ -114,6 +116,7 @@ spec:
   restartPolicy: Always
 ----
 
+[source,bash]
 ----
 kubectl apply -f dnsutils.yaml # <1>
 kubectl exec -i -t dnsutils -- sh # <2>
@@ -143,6 +146,7 @@ This typicaly involves adding a private DNS server that will be used for name re
 Additional DNS queries can be forwarded to a private DNS server by adding a `coredns-custom` ConfigMap.
 
 .dns-config.yaml
+[source,yaml]
 ----
 apiVersion: v1
 kind: ConfigMap
@@ -161,6 +165,7 @@ data:
 
 The changes to the DNS Server can be applied using the following two commands: 
 
+[source,bash]
 ----
 kubectl apply -f dns-config.yaml # <1>
 kubectl delete pod --namespace kube-system -l k8s-app=kube-dns # <2>
@@ -188,16 +193,19 @@ To deploy a single image to Kubernetes, a `deployment.yaml` file can be generate
 newly created image and define a service that exposes the image publicly from the cluster.
 
 .1. Create deployment.yaml file using the image:
+[source,bash]
 ----
 kubectl create deployment product-api --image=localhost:5000/buildcom/product-api --dry-run=client -o=yaml > deployment.yaml
 ----
 
 .2. Create service.yaml file:
+[source,bash]
 ----
 kubectl create service clusterip product-api --tcp=8080:8080 --dry-run=client -o=yaml >> service.yaml
 ----
 
 .3. Apply the deployment and service to the cluster: 
+[source,bash]
 ----
 kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
