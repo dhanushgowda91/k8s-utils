@@ -1,6 +1,7 @@
 :sectlinks:
 :sectanchors:
 :stylesheet: asciidoctor.css
+:source-highlighter: highlightjs
 :imagesdir: ./images
 // If not rendered on github, we use fonts for the captions, otherwise, we assign github emojis. DO NOT PUT A BLANK LINE BEFORE THIS, the ICONS don't render.
 ifndef::env-github[]
